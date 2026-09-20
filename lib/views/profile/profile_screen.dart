@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/app_colors.dart';
@@ -10,59 +12,55 @@ class ProfileScreen extends StatelessWidget {
   void openOrders(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => OrdersScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const OrdersScreen()),
     );
   }
 
   void showMessage(BuildContext context, String title) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$title coming soon'),
-      ),
+      SnackBar(content: Text('$title coming soon')),
     );
   }
 
   Future<void> logout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text(
-            'Are you sure you want to logout?',
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext, false);
-              },
-              child: const Text('Cancel'),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: AppColors.red),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext, true);
-              },
-              child: const Text(
-                'Logout',
-                style: TextStyle(color: AppColors.red),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
 
     if (confirmed != true || !context.mounted) return;
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LoginScreen(),
-      ),
-      (route) => false,
-    );
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (!context.mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (_) => false,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logout failed. Please try again.')),
+      );
+    }
   }
 
   @override
@@ -72,9 +70,7 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('My Profile'),
         actions: [
           IconButton(
-            onPressed: () {
-              showMessage(context, 'Settings');
-            },
+            onPressed: () => showMessage(context, 'Settings'),
             icon: const Icon(Icons.settings_outlined),
           ),
         ],
@@ -90,61 +86,42 @@ class ProfileScreen extends StatelessWidget {
               _ProfileOption(
                 icon: Icons.edit_outlined,
                 title: 'Edit Profile',
-                onTap: () {
-                  showMessage(context, 'Edit Profile');
-                },
+                onTap: () => showMessage(context, 'Edit Profile'),
               ),
               _ProfileOption(
                 icon: Icons.shopping_bag_outlined,
                 title: 'My Orders',
-                onTap: () {
-                  openOrders(context);
-                },
+                onTap: () => openOrders(context),
               ),
               _ProfileOption(
                 icon: Icons.location_on_outlined,
                 title: 'Addresses',
-                onTap: () {
-                  showMessage(context, 'Addresses');
-                },
+                onTap: () => showMessage(context, 'Addresses'),
               ),
               _ProfileOption(
                 icon: Icons.credit_card_outlined,
                 title: 'Payment Methods',
-                onTap: () {
-                  showMessage(context, 'Payment Methods');
-                },
+                onTap: () => showMessage(context, 'Payment Methods'),
               ),
               _ProfileOption(
                 icon: Icons.help_outline,
                 title: 'Help & Support',
-                onTap: () {
-                  showMessage(context, 'Help & Support');
-                },
+                onTap: () => showMessage(context, 'Help & Support'),
               ),
               _ProfileOption(
                 icon: Icons.info_outline,
                 title: 'About App',
-                onTap: () {
-                  showMessage(context, 'About App');
-                },
+                onTap: () => showMessage(context, 'About App'),
               ),
               const SizedBox(height: 30),
               OutlinedButton.icon(
-                onPressed: () {
-                  logout(context);
-                },
+                onPressed: () => logout(context),
                 icon: const Icon(Icons.logout),
                 label: const Text('Logout'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.red,
-                  minimumSize: const Size(
-                    double.infinity,
-                    50,
-                  ),
-                  side: const BorderSide(
-                    color: Color(0xFFFFCDD2),
-                  ),
+                  minimumSize: const Size(double.infinity, 50),
+                  side: const BorderSide(color: Color(0xFFFFCDD2)),
                   backgroundColor: const Color(0xFFFFF5F5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -164,41 +141,61 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        CircleAvatar(
-          radius: 38,
-          backgroundColor: Color(0xFFE5F7F0),
-          child: Icon(
-            Icons.person,
-            color: AppColors.darkGreen,
-            size: 45,
-          ),
-        ),
-        SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Faraz Ahmad',
-                style: TextStyle(
-                  color: AppColors.dark,
-                  fontSize: 21,
-                  fontWeight: FontWeight.bold,
-                ),
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Text('Please log in to view your profile.');
+    }
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data();
+        final savedName = data?['name'];
+        final name = savedName is String && savedName.trim().isNotEmpty
+            ? savedName.trim()
+            : user.displayName?.trim();
+        final email = data?['email'] as String? ?? user.email ?? '';
+
+        return Row(
+          children: [
+            const CircleAvatar(
+              radius: 38,
+              backgroundColor: Color(0xFFE5F7F0),
+              child: Icon(
+                Icons.person,
+                color: AppColors.darkGreen,
+                size: 45,
               ),
-              SizedBox(height: 5),
-              Text(
-                'faraz@gmail.com',
-                style: TextStyle(
-                  color: AppColors.grey,
-                ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name == null || name.isEmpty ? 'My Profile' : name,
+                    style: const TextStyle(
+                      color: AppColors.dark,
+                      fontSize: 21,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    email,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.grey),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -221,10 +218,7 @@ class _ProfileOption extends StatelessWidget {
         ListTile(
           onTap: onTap,
           contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            icon,
-            color: AppColors.dark,
-          ),
+          leading: Icon(icon, color: AppColors.dark),
           title: Text(
             title,
             style: const TextStyle(

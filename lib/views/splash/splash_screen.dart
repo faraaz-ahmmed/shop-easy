@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../viewmodels/splash_viewmodel.dart';
 import '../auth/login_screen.dart';
+import '../home/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,18 +17,18 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    openLogin();
+    openNextScreen();
   }
 
-  Future<void> openLogin() async {
-    await context.read<SplashViewModel>().start();
-
+  Future<void> openNextScreen() async {
+    final isLoggedIn = await context.read<SplashViewModel>().start();
     if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
+        builder: (_) =>
+            isLoggedIn ? const HomeScreen() : const LoginScreen(),
       ),
     );
   }
@@ -36,18 +37,18 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.darkGreen,
-      body: SafeArea(
+      body: const SafeArea(
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.shopping_cart_outlined,
                 color: Colors.white,
                 size: 100,
               ),
-              const SizedBox(height: 16),
-              const Text(
+              SizedBox(height: 16),
+              Text(
                 'ShopEasy',
                 style: TextStyle(
                   color: Colors.white,
@@ -55,8 +56,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 'Best Products\nBest Prices',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -65,8 +66,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   height: 1.3,
                 ),
               ),
-              const SizedBox(height: 70),
-              const SizedBox(
+              SizedBox(height: 70),
+              SizedBox(
                 width: 30,
                 height: 30,
                 child: CircularProgressIndicator(
@@ -74,8 +75,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   strokeWidth: 3,
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
+              SizedBox(height: 12),
+              Text(
                 'Loading...',
                 style: TextStyle(color: Colors.white70),
               ),
