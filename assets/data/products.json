@@ -1,13 +1,5 @@
 [
   {
-    "name": "Sports Shoes",
-    "price": 2499,
-    "oldPrice": 3999,
-    "category": "Fashion",
-    "rating": 4.5,
-    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800"
-  },
-  {
     "name": "Smart Watch",
     "price": 4999,
     "oldPrice": 6499,

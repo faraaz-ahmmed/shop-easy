@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/product_upload_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/responsive.dart';
 import '../../viewmodels/cart_viewmodel.dart';
@@ -46,30 +45,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Future<void> uploadProducts(BuildContext context) async {
-    try {
-      await ProductUploadService().uploadProducts();
-
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Products uploaded successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (error) {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Upload failed: $error'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final home = context.watch<HomeViewModel>();
@@ -83,11 +58,6 @@ class HomeScreen extends StatelessWidget {
         ),
         title: const _ShopTitle(),
         actions: [
-          IconButton(
-            tooltip: 'Upload products',
-            onPressed: () => uploadProducts(context),
-            icon: const Icon(Icons.cloud_upload_outlined),
-          ),
           Stack(
             children: [
               IconButton(
