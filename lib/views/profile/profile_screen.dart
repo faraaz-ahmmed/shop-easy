@@ -12,55 +12,63 @@ class ProfileScreen extends StatelessWidget {
   void openOrders(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const OrdersScreen()),
+      MaterialPageRoute(
+        builder: (_) => const OrdersScreen(),
+      ),
     );
   }
 
   void showMessage(BuildContext context, String title) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$title coming soon')),
+      SnackBar(
+        content: Text('$title coming soon'),
+      ),
     );
   }
 
   Future<void> logout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text(
+            'Are you sure you want to logout?',
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: AppColors.red),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
             ),
-          ),
-        ],
-      ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: AppColors.red),
+              ),
+            ),
+          ],
+        );
+      },
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (confirmed != true) return;
 
-    try {
-      await FirebaseAuth.instance.signOut();
-      if (!context.mounted) return;
+    await FirebaseAuth.instance.signOut();
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (_) => false,
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Logout failed. Please try again.')),
-      );
-    }
+    if (!context.mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
   }
 
   @override
@@ -70,7 +78,9 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('My Profile'),
         actions: [
           IconButton(
-            onPressed: () => showMessage(context, 'Settings'),
+            onPressed: () {
+              showMessage(context, 'Settings');
+            },
             icon: const Icon(Icons.settings_outlined),
           ),
         ],
@@ -86,42 +96,61 @@ class ProfileScreen extends StatelessWidget {
               _ProfileOption(
                 icon: Icons.edit_outlined,
                 title: 'Edit Profile',
-                onTap: () => showMessage(context, 'Edit Profile'),
+                onTap: () {
+                  showMessage(context, 'Edit Profile');
+                },
               ),
               _ProfileOption(
                 icon: Icons.shopping_bag_outlined,
                 title: 'My Orders',
-                onTap: () => openOrders(context),
+                onTap: () {
+                  openOrders(context);
+                },
               ),
               _ProfileOption(
                 icon: Icons.location_on_outlined,
                 title: 'Addresses',
-                onTap: () => showMessage(context, 'Addresses'),
+                onTap: () {
+                  showMessage(context, 'Addresses');
+                },
               ),
               _ProfileOption(
                 icon: Icons.credit_card_outlined,
                 title: 'Payment Methods',
-                onTap: () => showMessage(context, 'Payment Methods'),
+                onTap: () {
+                  showMessage(context, 'Payment Methods');
+                },
               ),
               _ProfileOption(
                 icon: Icons.help_outline,
                 title: 'Help & Support',
-                onTap: () => showMessage(context, 'Help & Support'),
+                onTap: () {
+                  showMessage(context, 'Help & Support');
+                },
               ),
               _ProfileOption(
                 icon: Icons.info_outline,
                 title: 'About App',
-                onTap: () => showMessage(context, 'About App'),
+                onTap: () {
+                  showMessage(context, 'About App');
+                },
               ),
               const SizedBox(height: 30),
               OutlinedButton.icon(
-                onPressed: () => logout(context),
+                onPressed: () {
+                  logout(context);
+                },
                 icon: const Icon(Icons.logout),
                 label: const Text('Logout'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.red,
-                  minimumSize: const Size(double.infinity, 50),
-                  side: const BorderSide(color: Color(0xFFFFCDD2)),
+                  minimumSize: const Size(
+                    double.infinity,
+                    50,
+                  ),
+                  side: const BorderSide(
+                    color: Color(0xFFFFCDD2),
+                  ),
                   backgroundColor: const Color(0xFFFFF5F5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -144,7 +173,7 @@ class _ProfileHeader extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      return const Text('Please log in to view your profile.');
+      return const SizedBox.shrink();
     }
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -154,11 +183,17 @@ class _ProfileHeader extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data();
-        final savedName = data?['name'];
-        final name = savedName is String && savedName.trim().isNotEmpty
-            ? savedName.trim()
-            : user.displayName?.trim();
-        final email = data?['email'] as String? ?? user.email ?? '';
+
+        final savedName = data?['name'] as String?;
+        final savedEmail = data?['email'] as String?;
+
+        final name = savedName?.trim().isNotEmpty == true
+            ? savedName!
+            : user.displayName ?? 'User';
+
+        final email = savedEmail?.trim().isNotEmpty == true
+            ? savedEmail!
+            : user.email ?? '';
 
         return Row(
           children: [
@@ -177,7 +212,7 @@ class _ProfileHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name == null || name.isEmpty ? 'My Profile' : name,
+                    name,
                     style: const TextStyle(
                       color: AppColors.dark,
                       fontSize: 21,
@@ -187,8 +222,9 @@ class _ProfileHeader extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     email,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: AppColors.grey),
+                    style: const TextStyle(
+                      color: AppColors.grey,
+                    ),
                   ),
                 ],
               ),
@@ -218,7 +254,10 @@ class _ProfileOption extends StatelessWidget {
         ListTile(
           onTap: onTap,
           contentPadding: EdgeInsets.zero,
-          leading: Icon(icon, color: AppColors.dark),
+          leading: Icon(
+            icon,
+            color: AppColors.dark,
+          ),
           title: Text(
             title,
             style: const TextStyle(
