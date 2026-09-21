@@ -5,16 +5,16 @@ import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../auth/login_screen.dart';
 import '../orders/orders_screen.dart';
+import 'addresses_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  void openOrders(BuildContext context) {
+  void openPage(BuildContext context, Widget page) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const OrdersScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => page),
     );
   }
 
@@ -97,21 +97,30 @@ class ProfileScreen extends StatelessWidget {
                 icon: Icons.edit_outlined,
                 title: 'Edit Profile',
                 onTap: () {
-                  showMessage(context, 'Edit Profile');
+                  openPage(
+                    context,
+                    const EditProfileScreen(),
+                  );
                 },
               ),
               _ProfileOption(
                 icon: Icons.shopping_bag_outlined,
                 title: 'My Orders',
                 onTap: () {
-                  openOrders(context);
+                  openPage(
+                    context,
+                    const OrdersScreen(),
+                  );
                 },
               ),
               _ProfileOption(
                 icon: Icons.location_on_outlined,
                 title: 'Addresses',
                 onTap: () {
-                  showMessage(context, 'Addresses');
+                  openPage(
+                    context,
+                    const AddressesScreen(),
+                  );
                 },
               ),
               _ProfileOption(

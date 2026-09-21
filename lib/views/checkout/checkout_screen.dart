@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../services/order_service.dart';
 import '../../utils/app_colors.dart';
 import '../../viewmodels/cart_viewmodel.dart';
+import '../../widgets/saved_addresses.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -34,6 +35,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() {
       paymentMethod = value;
     });
+  }
+
+  void selectAddress(Map<String, String> address) {
+    nameController.text = address['fullName'] ?? '';
+    phoneController.text = address['phone'] ?? '';
+    addressController.text = address['address'] ?? '';
   }
 
   Future<void> placeOrder() async {
@@ -153,6 +160,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  SavedAddresses(
+                    onSelected: selectAddress,
+                  ),
                   TextFormField(
                     controller: nameController,
                     decoration: const InputDecoration(
@@ -192,7 +202,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Address',
                       hintText: 'Enter your delivery address',
-                      prefixIcon: Icon(Icons.location_on_outlined),
+                      prefixIcon: Icon(
+                        Icons.location_on_outlined,
+                      ),
                       alignLabelWithHint: true,
                     ),
                     validator: (value) {
@@ -311,7 +323,9 @@ class _PaymentOption extends StatelessWidget {
     final selected = value == selectedValue;
 
     return InkWell(
-      onTap: () => onChanged(value),
+      onTap: () {
+        onChanged(value);
+      },
       borderRadius: BorderRadius.circular(10),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
