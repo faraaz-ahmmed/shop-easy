@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../services/order_service.dart';
 import '../../utils/app_colors.dart';
 import '../../viewmodels/cart_viewmodel.dart';
-import '../../viewmodels/order_viewmodel.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  State<CheckoutScreen> createState() {
-    return _CheckoutScreenState();
-  }
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
@@ -43,63 +41,89 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     final cart = context.read<CartViewModel>();
 
-    if (cart.items.isEmpty) return;
+    if (cart.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Your cart is empty'),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       isPlacingOrder = true;
     });
 
-    await Future.delayed(
-      const Duration(seconds: 2),
-    );
+    try {
+      final items = List.of(cart.items);
+      final total = cart.total;
 
-    if (!mounted) return;
+      await OrderService().placeOrder(
+        items: items,
+        name: nameController.text.trim(),
+        phone: phoneController.text.trim(),
+        address: addressController.text.trim(),
+        paymentMethod: paymentMethod,
+        subtotal: cart.subtotal,
+        deliveryCharges: cart.deliveryCharges,
+        total: total,
+      );
 
-    context.read<OrderViewModel>().addOrder(
-      total: cart.total,
-      itemCount: cart.itemCount,
-      image: cart.items.first.product.image,
-    );
+      await cart.clear();
 
-    cart.clear();
+      if (!mounted) return;
 
-    setState(() {
-      isPlacingOrder = false;
-    });
+      setState(() {
+        isPlacingOrder = false;
+      });
 
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          icon: const Icon(
-            Icons.check_circle,
-            color: AppColors.primary,
-            size: 60,
-          ),
-          title: const Text('Order Placed'),
-          content: const Text(
-            'Your order has been placed successfully.',
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Continue'),
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            icon: const Icon(
+              Icons.check_circle,
+              color: AppColors.primary,
+              size: 60,
             ),
-          ],
-        );
-      },
-    );
+            title: const Text('Order Placed'),
+            content: const Text(
+              'Your order has been placed successfully.',
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('Continue'),
+              ),
+            ],
+          );
+        },
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.popUntil(
-      context,
-      (route) => route.isFirst,
-    );
+      Navigator.popUntil(
+        context,
+        (route) => route.isFirst,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        isPlacingOrder = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Order failed: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -112,16 +136,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 700,
-          ),
+          constraints: const BoxConstraints(maxWidth: 700),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Form(
               key: formKey,
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Delivery Information',
@@ -137,13 +158,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Full Name',
                       hintText: 'Enter your name',
-                      prefixIcon: Icon(
-                        Icons.person_outline,
-                      ),
+                      prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (value) {
-                      if (value == null ||
-                          value.trim().isEmpty) {
+                      if (value == null || value.trim().isEmpty) {
                         return 'Enter your full name';
                       }
 
@@ -157,13 +175,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Phone Number',
                       hintText: '03XX XXXXXXX',
-                      prefixIcon: Icon(
-                        Icons.phone_outlined,
-                      ),
+                      prefixIcon: Icon(Icons.phone_outlined),
                     ),
                     validator: (value) {
-                      if (value == null ||
-                          value.trim().length < 11) {
+                      if (value == null || value.trim().length < 11) {
                         return 'Enter a valid phone number';
                       }
 
@@ -176,16 +191,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     maxLines: 3,
                     decoration: const InputDecoration(
                       labelText: 'Address',
-                      hintText:
-                          'Enter your delivery address',
-                      prefixIcon: Icon(
-                        Icons.location_on_outlined,
-                      ),
+                      hintText: 'Enter your delivery address',
+                      prefixIcon: Icon(Icons.location_on_outlined),
                       alignLabelWithHint: true,
                     ),
                     validator: (value) {
-                      if (value == null ||
-                          value.trim().isEmpty) {
+                      if (value == null || value.trim().isEmpty) {
                         return 'Enter your delivery address';
                       }
 
@@ -211,8 +222,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   _PaymentOption(
                     title: 'JazzCash / EasyPaisa',
-                    icon: Icons
-                        .account_balance_wallet_outlined,
+                    icon: Icons.account_balance_wallet_outlined,
                     value: 'JazzCash / EasyPaisa',
                     selectedValue: paymentMethod,
                     onChanged: selectPayment,
@@ -232,8 +242,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       border: Border.all(
                         color: AppColors.border,
                       ),
-                      borderRadius:
-                          BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       children: [
@@ -256,21 +265,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ),
                   const SizedBox(height: 25),
-                  ElevatedButton(
-                    onPressed: isPlacingOrder
-                        ? null
-                        : placeOrder,
-                    child: isPlacingOrder
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child:
-                                CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text('Place Order'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isPlacingOrder ? null : placeOrder,
+                      child: isPlacingOrder
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Place Order'),
+                    ),
                   ),
                 ],
               ),
@@ -364,17 +373,15 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = TextStyle(
-      color: bold
-          ? AppColors.primary
-          : AppColors.dark,
+      color: bold ? AppColors.primary : AppColors.dark,
       fontSize: bold ? 18 : 15,
-      fontWeight:
-          bold ? FontWeight.bold : FontWeight.normal,
+      fontWeight: bold
+          ? FontWeight.bold
+          : FontWeight.normal,
     );
 
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
