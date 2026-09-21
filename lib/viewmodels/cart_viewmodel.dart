@@ -1,14 +1,27 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/cart_item_model.dart';
 import '../models/product_model.dart';
 
 class CartViewModel extends ChangeNotifier {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
+
   final List<CartItemModel> _items = [];
 
-  List<CartItemModel> get items {
-    return List.unmodifiable(_items);
+  StreamSubscription<User?>? authSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+      cartSubscription;
+
+  CartViewModel() {
+    authSubscription = auth.authStateChanges().listen(listenToCart);
   }
+
+  List<CartItemModel> get items => List.unmodifiable(_items);
 
   int get itemCount {
     return _items.fold(
@@ -24,62 +37,125 @@ class CartViewModel extends ChangeNotifier {
     );
   }
 
-  double get deliveryCharges {
-    return _items.isEmpty ? 0 : 200;
+  double get deliveryCharges => _items.isEmpty ? 0 : 200;
+
+  double get total => subtotal + deliveryCharges;
+
+  CollectionReference<Map<String, dynamic>> cartReference(String userId) {
+    return firestore
+        .collection('users')
+        .doc(userId)
+        .collection('cart');
   }
 
-  double get total {
-    return subtotal + deliveryCharges;
+  void listenToCart(User? user) {
+    cartSubscription?.cancel();
+    _items.clear();
+
+    if (user == null) {
+      notifyListeners();
+      return;
+    }
+
+    cartSubscription = cartReference(user.uid).snapshots().listen((snapshot) {
+      _items
+        ..clear()
+        ..addAll(
+          snapshot.docs.map(
+            (document) => CartItemModel.fromMap(document.data()),
+          ),
+        );
+
+      notifyListeners();
+    });
   }
 
-  void addProduct({
+  Future<void> addProduct({
     required ProductModel product,
     required int size,
     required int quantity,
-  }) {
-    final index = _items.indexWhere(
-      (item) =>
-          item.product.id == product.id &&
-          item.size == size,
+  }) async {
+    final user = auth.currentUser;
+
+    if (user == null) return;
+
+    final item = CartItemModel(
+      product: product,
+      size: size,
+      quantity: quantity,
     );
 
-    if (index >= 0) {
-      _items[index].quantity += quantity;
-    } else {
-      _items.add(
-        CartItemModel(
-          product: product,
-          size: size,
-          quantity: quantity,
-        ),
-      );
-    }
+    final document = cartReference(user.uid).doc(item.documentId);
 
-    notifyListeners();
+    await firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(document);
+      final oldQuantity =
+          (snapshot.data()?['quantity'] as num? ?? 0).toInt();
+
+      final data = item.toMap();
+      data['quantity'] = oldQuantity + quantity;
+
+      transaction.set(document, data);
+    });
   }
 
-  void increase(CartItemModel item) {
-    item.quantity++;
-    notifyListeners();
+  Future<void> increase(CartItemModel item) async {
+    final user = auth.currentUser;
+
+    if (user == null) return;
+
+    await cartReference(user.uid)
+        .doc(item.documentId)
+        .update({
+      'quantity': FieldValue.increment(1),
+    });
   }
 
-  void decrease(CartItemModel item) {
+  Future<void> decrease(CartItemModel item) async {
+    final user = auth.currentUser;
+
+    if (user == null) return;
+
+    final document = cartReference(user.uid).doc(item.documentId);
+
     if (item.quantity > 1) {
-      item.quantity--;
+      await document.update({
+        'quantity': FieldValue.increment(-1),
+      });
     } else {
-      _items.remove(item);
+      await document.delete();
+    }
+  }
+
+  Future<void> remove(CartItemModel item) async {
+    final user = auth.currentUser;
+
+    if (user == null) return;
+
+    await cartReference(user.uid)
+        .doc(item.documentId)
+        .delete();
+  }
+
+  Future<void> clear() async {
+    final user = auth.currentUser;
+
+    if (user == null) return;
+
+    final snapshot = await cartReference(user.uid).get();
+    final batch = firestore.batch();
+
+    for (final document in snapshot.docs) {
+      batch.delete(document.reference);
     }
 
-    notifyListeners();
+    await batch.commit();
   }
 
-  void remove(CartItemModel item) {
-    _items.remove(item);
-    notifyListeners();
-  }
-
-  void clear() {
-    _items.clear();
-    notifyListeners();
+  @override
+  void dispose() {
+    authSubscription?.cancel();
+    cartSubscription?.cancel();
+    super.dispose();
   }
 }
