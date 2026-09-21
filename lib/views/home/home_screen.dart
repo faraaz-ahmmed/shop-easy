@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../services/product_upload_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/responsive.dart';
 import '../../viewmodels/cart_viewmodel.dart';
@@ -45,6 +46,30 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Future<void> uploadProducts(BuildContext context) async {
+    try {
+      await ProductUploadService().uploadProducts();
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Products uploaded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Upload failed: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final home = context.watch<HomeViewModel>();
@@ -58,6 +83,11 @@ class HomeScreen extends StatelessWidget {
         ),
         title: const _ShopTitle(),
         actions: [
+          IconButton(
+            tooltip: 'Upload products',
+            onPressed: () => uploadProducts(context),
+            icon: const Icon(Icons.cloud_upload_outlined),
+          ),
           Stack(
             children: [
               IconButton(
@@ -109,9 +139,10 @@ class HomeScreen extends StatelessWidget {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: home.categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
                       final category = home.categories[index];
+
                       return _CategoryItem(
                         name: category,
                         selected: category == home.selectedCategory,
@@ -178,6 +209,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     itemBuilder: (context, index) {
                       final product = home.filteredProducts[index];
+
                       return ProductCard(
                         product: product,
                         onTap: () {
@@ -239,7 +271,10 @@ class _WelcomeMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const SizedBox.shrink();
+
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
@@ -248,6 +283,7 @@ class _WelcomeMessage extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         final savedName = snapshot.data?.data()?['name'];
+
         final name = savedName is String && savedName.trim().isNotEmpty
             ? savedName.trim()
             : user.displayName?.trim();
@@ -309,7 +345,10 @@ class _OfferBanner extends StatelessWidget {
               children: [
                 Text(
                   'Special Offer',
-                  style: TextStyle(color: Colors.white, fontSize: 15),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                  ),
                 ),
                 SizedBox(height: 4),
                 Text(
