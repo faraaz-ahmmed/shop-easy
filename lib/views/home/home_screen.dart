@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../services/product_seed_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/responsive.dart';
 import '../../viewmodels/cart_viewmodel.dart';
@@ -17,32 +18,46 @@ import '../profile/profile_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  void openCart(BuildContext context) {
+  void openPage(BuildContext context, Widget page) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CartScreen()),
+      MaterialPageRoute(builder: (_) => page),
     );
   }
 
-  void openCategories(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CategoryScreen()),
-    );
-  }
+  Future<void> uploadProducts(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
 
-  void openOrders(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const OrdersScreen()),
-    );
-  }
+    try {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Uploading products, please wait...'),
+          duration: Duration(seconds: 30),
+        ),
+      );
 
-  void openProfile(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-    );
+      final count = await ProductSeedService().uploadProducts();
+
+      if (!context.mounted) return;
+
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('$count products uploaded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Upload failed: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -53,15 +68,26 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () => openOrders(context),
+          onPressed: () {
+            openPage(context, const OrdersScreen());
+          },
           icon: const Icon(Icons.menu),
         ),
         title: const _ShopTitle(),
         actions: [
+          IconButton(
+            tooltip: 'Upload 320 products',
+            onPressed: () {
+              uploadProducts(context);
+            },
+            icon: const Icon(Icons.cloud_upload_outlined),
+          ),
           Stack(
             children: [
               IconButton(
-                onPressed: () => openCart(context),
+                onPressed: () {
+                  openPage(context, const CartScreen());
+                },
                 icon: const Icon(Icons.shopping_cart_outlined),
               ),
               if (cartCount > 0)
@@ -109,14 +135,19 @@ class HomeScreen extends StatelessWidget {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: home.categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
+                    separatorBuilder: (_, _) {
+                      return const SizedBox(width: 12);
+                    },
                     itemBuilder: (context, index) {
                       final category = home.categories[index];
 
                       return _CategoryItem(
                         name: category,
-                        selected: category == home.selectedCategory,
-                        onTap: () => home.selectCategory(category),
+                        selected:
+                            category == home.selectedCategory,
+                        onTap: () {
+                          home.selectCategory(category);
+                        },
                       );
                     },
                   ),
@@ -135,59 +166,44 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => home.selectCategory('All'),
+                      onPressed: () {
+                        home.selectCategory('All');
+                      },
                       child: const Text('See All'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 if (home.filteredProducts.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 70),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 70,
-                            color: AppColors.grey,
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            'No products found',
-                            style: TextStyle(
-                              color: AppColors.dark,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
+                  const _EmptyProducts()
                 else
                   GridView.builder(
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+                    physics:
+                        const NeverScrollableScrollPhysics(),
                     itemCount: home.filteredProducts.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: Responsive.gridCount(context),
+                    gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount:
+                          Responsive.gridCount(context),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                       childAspectRatio:
-                          Responsive.isMobile(context) ? 0.72 : 0.85,
+                          Responsive.isMobile(context)
+                              ? 0.72
+                              : 0.85,
                     ),
                     itemBuilder: (context, index) {
-                      final product = home.filteredProducts[index];
+                      final product =
+                          home.filteredProducts[index];
 
                       return ProductCard(
                         product: product,
                         onTap: () {
-                          Navigator.push(
+                          openPage(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductDetailsScreen(product: product),
+                            ProductDetailsScreen(
+                              product: product,
                             ),
                           );
                         },
@@ -202,9 +218,17 @@ class HomeScreen extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         onDestinationSelected: (index) {
-          if (index == 1) openCategories(context);
-          if (index == 2) openCart(context);
-          if (index == 3) openProfile(context);
+          if (index == 1) {
+            openPage(context, const CategoryScreen());
+          }
+
+          if (index == 2) {
+            openPage(context, const CartScreen());
+          }
+
+          if (index == 3) {
+            openPage(context, const ProfileScreen());
+          }
         },
         destinations: [
           const NavigationDestination(
@@ -220,7 +244,9 @@ class HomeScreen extends StatelessWidget {
             icon: Badge(
               isLabelVisible: cartCount > 0,
               label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_cart_outlined),
+              child: const Icon(
+                Icons.shopping_cart_outlined,
+              ),
             ),
             label: 'Cart',
           ),
@@ -246,20 +272,26 @@ class _WelcomeMessage extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<
+        DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .snapshots(),
       builder: (context, snapshot) {
-        final savedName = snapshot.data?.data()?['name'];
+        final savedName =
+            snapshot.data?.data()?['name'];
 
-        final name = savedName is String && savedName.trim().isNotEmpty
-            ? savedName.trim()
-            : user.displayName?.trim();
+        final name =
+            savedName is String &&
+                    savedName.trim().isNotEmpty
+                ? savedName.trim()
+                : user.displayName?.trim();
 
         return Text(
-          name == null || name.isEmpty ? 'Welcome!' : 'Welcome, $name!',
+          name == null || name.isEmpty
+              ? 'Welcome!'
+              : 'Welcome, $name!',
           style: const TextStyle(
             color: AppColors.dark,
             fontSize: 20,
@@ -287,7 +319,9 @@ class _ShopTitle extends StatelessWidget {
           TextSpan(text: 'Shop'),
           TextSpan(
             text: 'Easy',
-            style: TextStyle(color: AppColors.primary),
+            style: TextStyle(
+              color: AppColors.primary,
+            ),
           ),
         ],
       ),
@@ -311,7 +345,8 @@ class _OfferBanner extends StatelessWidget {
         children: [
           const Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
                   'Special Offer',
@@ -342,7 +377,7 @@ class _OfferBanner extends StatelessWidget {
           ),
           Icon(
             Icons.headphones,
-            color: Colors.white.withValues(alpha: 0.85),
+            color: Colors.white,
             size: 85,
           ),
         ],
@@ -392,11 +427,14 @@ class _CategoryItem extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 27,
-              backgroundColor:
-                  selected ? AppColors.primary : const Color(0xFFE5F7F0),
+              backgroundColor: selected
+                  ? AppColors.primary
+                  : const Color(0xFFE5F7F0),
               child: Icon(
                 icon,
-                color: selected ? Colors.white : AppColors.darkGreen,
+                color: selected
+                    ? Colors.white
+                    : AppColors.darkGreen,
               ),
             ),
             const SizedBox(height: 7),
@@ -405,10 +443,44 @@ class _CategoryItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: selected ? AppColors.primary : AppColors.dark,
+                color: selected
+                    ? AppColors.primary
+                    : AppColors.dark,
                 fontSize: 12,
-                fontWeight:
-                    selected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: selected
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyProducts extends StatelessWidget {
+  const _EmptyProducts();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 70),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 70,
+              color: AppColors.grey,
+            ),
+            SizedBox(height: 12),
+            Text(
+              'No products found',
+              style: TextStyle(
+                color: AppColors.dark,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
