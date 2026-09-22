@@ -1,79 +1,120 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 
 class ProductSeedService {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  final categories = const [
-    'Electronics',
-    'Fashion',
-    'Home',
-    'Beauty',
-    'Sports',
-    'Toys',
-  ];
+  Future<int> uploadProducts() async {
+    final response = await http.get(
+      Uri.parse('https://dummyjson.com/products?limit=0'),
+    );
 
-  final names = const [
-    'Smart Watch',
-    'Wireless Headphones',
-    'Bluetooth Speaker',
-    'Sports Shoes',
-    'Casual Shirt',
-    'Travel Backpack',
-    'Table Lamp',
-    'Wall Clock',
-    'Coffee Maker',
-    'Face Serum',
-    'Perfume',
-    'Hair Dryer',
-    'Football',
-    'Cricket Bat',
-    'Yoga Mat',
-    'Toy Car',
-    'Building Blocks',
-    'Teddy Bear',
-    'Smart Phone',
-    'Laptop Bag',
-  ];
+    if (response.statusCode != 200) {
+      throw Exception('Products download failed');
+    }
 
-  final images = const [
-    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
-    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
-    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
-    'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800',
-    'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800',
-    'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800',
-    'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800',
-    'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800',
-  ];
+    final json = jsonDecode(response.body);
+    final List sourceProducts = json['products'] ?? [];
 
-  Future<void> uploadProducts() async {
+    if (sourceProducts.isEmpty) {
+      throw Exception('No products found');
+    }
+
     final batch = firestore.batch();
+    const totalProducts = 320;
 
-    for (int index = 1; index <= 320; index++) {
-      final name = names[(index - 1) % names.length];
-      final category =
-          categories[(index - 1) % categories.length];
+    for (int index = 0; index < totalProducts; index++) {
+      final source = Map<String, dynamic>.from(
+        sourceProducts[index % sourceProducts.length],
+      );
 
-      final price = 500 + (index * 137) % 25000;
-      final oldPrice = price + 500 + (index % 5) * 300;
-      final rating = 3.5 + (index % 15) / 10;
+      final originalName = source['title'] as String? ?? 'Product';
+      final sourceCategory = source['category'] as String? ?? '';
+      final priceInDollar =
+          (source['price'] as num? ?? 10).toDouble();
 
-      final id = 'product_${index.toString().padLeft(3, '0')}';
+      final discount =
+          (source['discountPercentage'] as num? ?? 10).toDouble();
+
+      final price = (priceInDollar * 280).round();
+      final oldPrice =
+          (price / (1 - discount / 100)).round();
+
+      final isExtraProduct = index >= sourceProducts.length;
+
+      final name = isExtraProduct
+          ? '$originalName Premium Edition'
+          : originalName;
+
+      final documentId =
+          'catalog_${(index + 1).toString().padLeft(3, '0')}';
 
       final document = firestore
           .collection('products')
-          .doc(id);
+          .doc(documentId);
 
       batch.set(document, {
-        'name': '$name $index',
+        'name': name,
         'price': price,
         'oldPrice': oldPrice,
-        'category': category,
-        'rating': rating,
-        'image': images[(index - 1) % images.length],
+        'category': mapCategory(sourceCategory),
+        'rating':
+            (source['rating'] as num? ?? 4).toDouble(),
+        'image': source['thumbnail'] as String? ?? '',
+        'description':
+            source['description'] as String? ?? '',
+        'stock': (source['stock'] as num? ?? 10).toInt(),
       });
     }
 
     await batch.commit();
+
+    return totalProducts;
+  }
+
+  String mapCategory(String category) {
+    if ([
+      'beauty',
+      'fragrances',
+      'skin-care',
+    ].contains(category)) {
+      return 'Beauty';
+    }
+
+    if ([
+      'mens-shirts',
+      'mens-shoes',
+      'mens-watches',
+      'womens-bags',
+      'womens-dresses',
+      'womens-jewellery',
+      'womens-shoes',
+      'womens-watches',
+      'sunglasses',
+      'tops',
+    ].contains(category)) {
+      return 'Fashion';
+    }
+
+    if ([
+      'furniture',
+      'home-decoration',
+      'kitchen-accessories',
+      'groceries',
+    ].contains(category)) {
+      return 'Home';
+    }
+
+    if ([
+      'sports-accessories',
+      'vehicle',
+      'motorcycle',
+    ].contains(category)) {
+      return 'Sports';
+    }
+
+    return 'Electronics';
   }
 }
