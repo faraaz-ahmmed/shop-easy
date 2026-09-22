@@ -5,13 +5,14 @@ import '../../models/order_model.dart';
 import '../../utils/app_colors.dart';
 import '../../viewmodels/order_viewmodel.dart';
 import '../../widgets/product_image.dart';
+import 'order_details_screen.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final orders = context.watch<OrderViewModel>();
+    final orderViewModel = context.watch<OrderViewModel>();
 
     return Scaffold(
       appBar: AppBar(
@@ -27,20 +28,22 @@ class OrdersScreen extends StatelessWidget {
                 child: ListView.separated(
                   padding: const EdgeInsets.all(12),
                   scrollDirection: Axis.horizontal,
-                  itemCount: orders.filters.length,
-                  separatorBuilder: (_, __) {
+                  itemCount: orderViewModel.filters.length,
+                  separatorBuilder: (_, _) {
                     return const SizedBox(width: 8);
                   },
                   itemBuilder: (context, index) {
-                    final filter = orders.filters[index];
+                    final filter =
+                        orderViewModel.filters[index];
+
                     final selected =
-                        filter == orders.selectedFilter;
+                        filter == orderViewModel.selectedFilter;
 
                     return ChoiceChip(
                       label: Text(filter),
                       selected: selected,
                       onSelected: (_) {
-                        orders.selectFilter(filter);
+                        orderViewModel.selectFilter(filter);
                       },
                       selectedColor: AppColors.primary,
                       labelStyle: TextStyle(
@@ -53,21 +56,36 @@ class OrdersScreen extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: orders.filteredOrders.isEmpty
+                child: orderViewModel.filteredOrders.isEmpty
                     ? const _EmptyOrders()
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount:
-                            orders.filteredOrders.length,
-                        separatorBuilder: (_, __) {
+                            orderViewModel.filteredOrders.length,
+                        separatorBuilder: (_, _) {
                           return const SizedBox(height: 12);
                         },
                         itemBuilder: (context, index) {
                           final order =
-                              orders.filteredOrders[index];
+                              orderViewModel.filteredOrders[index];
 
-                          return _OrderCard(
-                            order: order,
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      OrderDetailsScreen(
+                                    order: order,
+                                  ),
+                                ),
+                              );
+                            },
+                            borderRadius:
+                                BorderRadius.circular(12),
+                            child: _OrderCard(
+                              order: order,
+                            ),
                           );
                         },
                       ),
@@ -124,11 +142,8 @@ class _OrderCard extends StatelessWidget {
   });
 
   String get formattedDate {
-    final day =
-        order.date.day.toString().padLeft(2, '0');
-
-    final month =
-        order.date.month.toString().padLeft(2, '0');
+    final day = order.date.day.toString().padLeft(2, '0');
+    final month = order.date.month.toString().padLeft(2, '0');
 
     return '$day/$month/${order.date.year}';
   }
@@ -140,6 +155,9 @@ class _OrderCard extends StatelessWidget {
 
       case 'Shipped':
         return Colors.blue;
+
+      case 'Cancelled':
+        return Colors.red;
 
       default:
         return Colors.orange;
@@ -174,8 +192,7 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Order #${order.id}',
@@ -210,25 +227,33 @@ class _OrderCard extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(
-                alpha: 0.12,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  order.status,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              order.status,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 10),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.grey,
               ),
-            ),
+            ],
           ),
         ],
       ),
