@@ -3,12 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/product_seed_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/responsive.dart';
 import '../../viewmodels/cart_viewmodel.dart';
 import '../../viewmodels/home_viewmodel.dart';
 import '../../widgets/product_card.dart';
+import '../auth/login_screen.dart';
 import '../cart/cart_screen.dart';
 import '../category/category_screen.dart';
 import '../orders/orders_screen.dart';
@@ -18,6 +18,8 @@ import '../profile/profile_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  // ================= OPEN PAGE START =================
+
   void openPage(BuildContext context, Widget page) {
     Navigator.push(
       context,
@@ -25,91 +27,100 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Future<void> uploadProducts(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
+  // ================= OPEN PAGE END =================
 
-    try {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Uploading products, please wait...'),
-          duration: Duration(seconds: 30),
-        ),
-      );
+  // ================= LOGOUT FUNCTION START =================
 
-      final count = await ProductSeedService().uploadProducts();
+  Future<void> logout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirm Logout'),
+          content: const Text(
+            'Are you sure you want to logout?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('No'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
 
-      if (!context.mounted) return;
+    if (confirmed != true) return;
 
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('$count products uploaded successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (error) {
-      if (!context.mounted) return;
+    await FirebaseAuth.instance.signOut();
 
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Upload failed: $error'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    if (!context.mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
   }
+
+  // ================= LOGOUT FUNCTION END =================
 
   @override
   Widget build(BuildContext context) {
     final home = context.watch<HomeViewModel>();
-    final cartCount = context.watch<CartViewModel>().itemCount;
+    final cartCount =
+        context.watch<CartViewModel>().itemCount;
 
     return Scaffold(
+      // ================= APP BAR START =================
+
       appBar: AppBar(
+        // ================= MENU ICON START =================
+
         leading: IconButton(
+          tooltip: 'My Orders',
           onPressed: () {
-            openPage(context, const OrdersScreen());
+            openPage(
+              context,
+              const OrdersScreen(),
+            );
           },
           icon: const Icon(Icons.menu),
         ),
+
+        // ================= MENU ICON END =================
+
         title: const _ShopTitle(),
+
         actions: [
+          // ================= LOGOUT ICON START =================
+
           IconButton(
-            tooltip: 'Upload 320 products',
+            tooltip: 'Logout',
             onPressed: () {
-              uploadProducts(context);
+              logout(context);
             },
-            icon: const Icon(Icons.cloud_upload_outlined),
+            icon: const Icon(Icons.logout),
           ),
-          Stack(
-            children: [
-              IconButton(
-                onPressed: () {
-                  openPage(context, const CartScreen());
-                },
-                icon: const Icon(Icons.shopping_cart_outlined),
-              ),
-              if (cartCount > 0)
-                Positioned(
-                  right: 5,
-                  top: 4,
-                  child: CircleAvatar(
-                    radius: 8,
-                    backgroundColor: Colors.red,
-                    child: Text(
-                      cartCount > 9 ? '9+' : '$cartCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+
+          // ================= LOGOUT ICON END =================
         ],
       ),
+
+      // ================= APP BAR END =================
+
+      // ================= BODY START =================
+
       body: Center(
         child: SizedBox(
           width: Responsive.contentWidth(context),
@@ -118,8 +129,16 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ================= WELCOME START =================
+
                 const _WelcomeMessage(),
+
+                // ================= WELCOME END =================
+
                 const SizedBox(height: 16),
+
+                // ================= SEARCH BAR START =================
+
                 TextField(
                   onChanged: home.search,
                   decoration: const InputDecoration(
@@ -127,9 +146,21 @@ class HomeScreen extends StatelessWidget {
                     prefixIcon: Icon(Icons.search),
                   ),
                 ),
+
+                // ================= SEARCH BAR END =================
+
                 const SizedBox(height: 16),
+
+                // ================= OFFER BANNER START =================
+
                 const _OfferBanner(),
+
+                // ================= OFFER BANNER END =================
+
                 const SizedBox(height: 18),
+
+                // ================= CATEGORIES START =================
+
                 SizedBox(
                   height: 88,
                   child: ListView.separated(
@@ -139,12 +170,14 @@ class HomeScreen extends StatelessWidget {
                       return const SizedBox(width: 12);
                     },
                     itemBuilder: (context, index) {
-                      final category = home.categories[index];
+                      final category =
+                          home.categories[index];
 
                       return _CategoryItem(
                         name: category,
                         selected:
-                            category == home.selectedCategory,
+                            category ==
+                            home.selectedCategory,
                         onTap: () {
                           home.selectCategory(category);
                         },
@@ -152,7 +185,13 @@ class HomeScreen extends StatelessWidget {
                     },
                   ),
                 ),
+
+                // ================= CATEGORIES END =================
+
                 const SizedBox(height: 18),
+
+                // ================= PRODUCT TITLE START =================
+
                 Row(
                   children: [
                     const Expanded(
@@ -167,13 +206,20 @@ class HomeScreen extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: () {
+                        
                         home.selectCategory('All');
                       },
                       child: const Text('See All'),
                     ),
                   ],
                 ),
+
+                // ================= PRODUCT TITLE END =================
+
                 const SizedBox(height: 10),
+
+                // ================= PRODUCT GRID START =================
+
                 if (home.filteredProducts.isEmpty)
                   const _EmptyProducts()
                 else
@@ -181,7 +227,8 @@ class HomeScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics:
                         const NeverScrollableScrollPhysics(),
-                    itemCount: home.filteredProducts.length,
+                    itemCount:
+                        home.filteredProducts.length,
                     gridDelegate:
                         SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount:
@@ -190,8 +237,8 @@ class HomeScreen extends StatelessWidget {
                       mainAxisSpacing: 12,
                       childAspectRatio:
                           Responsive.isMobile(context)
-                              ? 0.72
-                              : 0.85,
+                          ? 0.72
+                          : 0.85,
                     ),
                     itemBuilder: (context, index) {
                       final product =
@@ -210,36 +257,65 @@ class HomeScreen extends StatelessWidget {
                       );
                     },
                   ),
+
+                // ================= PRODUCT GRID END =================
               ],
             ),
           ),
         ),
       ),
+
+      // ================= BODY END =================
+
+      // ================= BOTTOM NAVIGATION START =================
+
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         onDestinationSelected: (index) {
           if (index == 1) {
-            openPage(context, const CategoryScreen());
+            openPage(
+              context,
+              const CategoryScreen(),
+            );
           }
 
           if (index == 2) {
-            openPage(context, const CartScreen());
+            openPage(
+              context,
+              const CartScreen(),
+            );
           }
 
           if (index == 3) {
-            openPage(context, const ProfileScreen());
+            openPage(
+              context,
+              const ProfileScreen(),
+            );
           }
         },
         destinations: [
+          // ================= HOME ICON START =================
+
           const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
+
+          // ================= HOME ICON END =================
+
+          // ================= CATEGORY ICON START =================
+
           const NavigationDestination(
             icon: Icon(Icons.grid_view_outlined),
+            selectedIcon: Icon(Icons.grid_view),
             label: 'Category',
           ),
+
+          // ================= CATEGORY ICON END =================
+
+          // ================= CART ICON START =================
+
           NavigationDestination(
             icon: Badge(
               isLabelVisible: cartCount > 0,
@@ -248,49 +324,127 @@ class HomeScreen extends StatelessWidget {
                 Icons.shopping_cart_outlined,
               ),
             ),
+            selectedIcon: Badge(
+              isLabelVisible: cartCount > 0,
+              label: Text('$cartCount'),
+              child: const Icon(
+                Icons.shopping_cart,
+              ),
+            ),
             label: 'Cart',
           ),
+
+          // ================= CART ICON END =================
+
+          // ================= PROFILE ICON START =================
+
           const NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
           ),
+
+          // ================= PROFILE ICON END =================
         ],
       ),
+
+      // ================= BOTTOM NAVIGATION END =================
     );
   }
 }
 
-class _WelcomeMessage extends StatelessWidget {
+// ================= WELCOME WIDGET START =================
+
+class _WelcomeMessage extends StatefulWidget {
   const _WelcomeMessage();
 
   @override
-  Widget build(BuildContext context) {
+  State<_WelcomeMessage> createState() {
+    return _WelcomeMessageState();
+  }
+}
+
+class _WelcomeMessageState
+    extends State<_WelcomeMessage> {
+  late final Future<Map<String, dynamic>> welcomeData;
+
+  @override
+  void initState() {
+    super.initState();
+    welcomeData = loadWelcomeData();
+  }
+
+  Future<Map<String, dynamic>>
+  loadWelcomeData() async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      return const SizedBox.shrink();
+      return {
+        'name': 'User',
+        'isReturning': false,
+      };
     }
 
-    return StreamBuilder<
-        DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .snapshots(),
-      builder: (context, snapshot) {
-        final savedName =
-            snapshot.data?.data()?['name'];
+    final userReference = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid);
 
-        final name =
-            savedName is String &&
-                    savedName.trim().isNotEmpty
-                ? savedName.trim()
-                : user.displayName?.trim();
+    final document = await userReference.get();
+    final data = document.data();
+
+    final savedName = data?['name'];
+
+    final name =
+        savedName is String &&
+            savedName.trim().isNotEmpty
+        ? savedName.trim()
+        : user.displayName?.trim().isNotEmpty == true
+        ? user.displayName!.trim()
+        : 'User';
+
+    final isReturning =
+        data?['hasLoggedInBefore'] == true;
+
+    if (!isReturning) {
+      await userReference.set(
+        {
+          'hasLoggedInBefore': true,
+        },
+        SetOptions(merge: true),
+      );
+    }
+
+    return {
+      'name': name,
+      'isReturning': isReturning,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: welcomeData,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
+          return const Text(
+            'Welcome!',
+            style: TextStyle(
+              color: AppColors.dark,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        }
+
+        final data = snapshot.data;
+        final name = data?['name'] ?? 'User';
+        final isReturning =
+            data?['isReturning'] == true;
 
         return Text(
-          name == null || name.isEmpty
-              ? 'Welcome!'
+          isReturning
+              ? 'Welcome Back, $name!'
               : 'Welcome, $name!',
           style: const TextStyle(
             color: AppColors.dark,
@@ -302,6 +456,10 @@ class _WelcomeMessage extends StatelessWidget {
     );
   }
 }
+
+// ================= WELCOME WIDGET END =================
+
+// ================= SHOP TITLE START =================
 
 class _ShopTitle extends StatelessWidget {
   const _ShopTitle();
@@ -329,6 +487,10 @@ class _ShopTitle extends StatelessWidget {
   }
 }
 
+// ================= SHOP TITLE END =================
+
+// ================= OFFER BANNER START =================
+
 class _OfferBanner extends StatelessWidget {
   const _OfferBanner();
 
@@ -341,9 +503,9 @@ class _OfferBanner extends StatelessWidget {
         color: AppColors.darkGreen,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
@@ -386,6 +548,10 @@ class _OfferBanner extends StatelessWidget {
   }
 }
 
+// ================= OFFER BANNER END =================
+
+// ================= CATEGORY WIDGET START =================
+
 class _CategoryItem extends StatelessWidget {
   final String name;
   final bool selected;
@@ -401,16 +567,22 @@ class _CategoryItem extends StatelessWidget {
     switch (name) {
       case 'Electronics':
         return Icons.phone_android;
+
       case 'Fashion':
         return Icons.checkroom;
+
       case 'Home':
         return Icons.home_outlined;
+
       case 'Beauty':
         return Icons.face_retouching_natural;
+
       case 'Sports':
         return Icons.sports_basketball_outlined;
+
       case 'Toys':
         return Icons.toys_outlined;
+
       default:
         return Icons.apps;
     }
@@ -459,6 +631,10 @@ class _CategoryItem extends StatelessWidget {
   }
 }
 
+// ================= CATEGORY WIDGET END =================
+
+// ================= EMPTY PRODUCTS START =================
+
 class _EmptyProducts extends StatelessWidget {
   const _EmptyProducts();
 
@@ -489,3 +665,5 @@ class _EmptyProducts extends StatelessWidget {
     );
   }
 }
+
+// ================= EMPTY PRODUCTS END =================
