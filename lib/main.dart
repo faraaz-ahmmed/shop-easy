@@ -11,6 +11,8 @@ import 'viewmodels/order_viewmodel.dart';
 import 'viewmodels/splash_viewmodel.dart';
 import 'views/splash/splash_screen.dart';
 
+// ================= MAIN START =================
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -21,12 +23,18 @@ Future<void> main() async {
   runApp(const ShopEasyApp());
 }
 
+// ================= MAIN END =================
+
+// ================= APP START =================
+
 class ShopEasyApp extends StatelessWidget {
   const ShopEasyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
+      // ================= PROVIDERS START =================
+
       providers: [
         ChangeNotifierProvider(
           create: (_) => SplashViewModel(),
@@ -44,12 +52,26 @@ class ShopEasyApp extends StatelessWidget {
           create: (_) => OrderViewModel(),
         ),
       ],
+
+      // ================= PROVIDERS END =================
+
       child: MaterialApp(
+        // ================= APP SETTINGS START =================
+
         debugShowCheckedModeBanner: false,
         title: 'ShopEasy',
         theme: AppTheme.light,
-        home: SplashScreen(),
+
+        // ================= APP SETTINGS END =================
+
+        // ================= FIRST SCREEN START =================
+
+        home: const SplashScreen(),
+
+        // ================= FIRST SCREEN END =================
       ),
     );
   }
 }
+
+// ================= APP END =================

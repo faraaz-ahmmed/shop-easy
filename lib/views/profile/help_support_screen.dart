@@ -8,15 +8,15 @@ class HelpSupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ================= APP BAR START =================
+      //  APP BAR START 
 
       appBar: AppBar(
         title: const Text('Help & Support'),
       ),
 
-      // ================= APP BAR END =================
+      //  APP BAR END 
 
-      // ================= BODY START =================
+      //  BODY START 
 
       body: Center(
         child: ConstrainedBox(
@@ -43,17 +43,17 @@ class HelpSupportScreen extends StatelessWidget {
               ),
               const SizedBox(height: 25),
 
-              // ================= CONTACT START =================
+              //  CONTACT START 
 
               const _SupportTile(
                 icon: Icons.email_outlined,
                 title: 'Email Support',
-                subtitle: 'support@shopeasy.com',
+                subtitle: 'farazahmad@shopeasy.com',
               ),
               const _SupportTile(
                 icon: Icons.phone_outlined,
                 title: 'Call Support',
-                subtitle: '+92 300 1234567',
+                subtitle: '+92 343 8992152',
               ),
               const _SupportTile(
                 icon: Icons.schedule,
@@ -61,7 +61,7 @@ class HelpSupportScreen extends StatelessWidget {
                 subtitle: 'Monday to Saturday, 9 AM - 6 PM',
               ),
 
-              // ================= CONTACT END =================
+              //  CONTACT END 
 
               const SizedBox(height: 25),
 
@@ -75,7 +75,7 @@ class HelpSupportScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
-              // ================= FAQ START =================
+              //  FAQ START 
 
               const _QuestionTile(
                 question: 'How can I place an order?',
@@ -98,13 +98,13 @@ class HelpSupportScreen extends StatelessWidget {
                     'Cash on Delivery, Card, Easypaisa and JazzCash are available.',
               ),
 
-              // ================= FAQ END =================
+              //  FAQ END 
             ],
           ),
         ),
       ),
 
-      // ================= BODY END =================
+      //  BODY END 
     );
   }
 }

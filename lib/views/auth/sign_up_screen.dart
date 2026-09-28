@@ -8,7 +8,9 @@ class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<SignUpScreen> createState() {
+    return _SignUpScreenState();
+  }
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
@@ -17,7 +19,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  final confirmPasswordController =
+      TextEditingController();
+
+  bool hidePassword = true;
+  bool hideConfirmPassword = true;
+
+  // ================= SIGNUP START =================
+
+  Future<void> signUp() async {
+    if (!formKey.currentState!.validate()) return;
+
+    final auth = context.read<AuthViewModel>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    final success = await auth.signUp(
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      // Signup کے بعد user کو Login کرنا ہوگا
+      await auth.logout();
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Account created successfully. Please login now.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            auth.errorMessage ?? 'Signup failed.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ================= SIGNUP END =================
 
   @override
   void dispose() {
@@ -28,33 +80,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  Future<void> signUp() async {
-    if (!formKey.currentState!.validate()) return;
-
-    final success = await context.read<AuthViewModel>().signUp(
-      name: nameController.text.trim(),
-      email: emailController.text.trim(),
-      password: passwordController.text.trim(),
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      Navigator.pop(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully'),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
 
     return Scaffold(
+      // ================= BACKGROUND START =================
+
       body: Stack(
         children: [
           const Positioned(
@@ -66,6 +98,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
               backgroundColor: Color(0x33009966),
             ),
           ),
+
+          // ================= BACKGROUND END =================
+
+          // ================= BODY START =================
+
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
@@ -74,114 +111,286 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 430),
+                  constraints: const BoxConstraints(
+                    maxWidth: 430,
+                  ),
                   child: Form(
                     key: formKey,
                     child: Column(
                       children: [
                         const SizedBox(height: 10),
+
+                        // ================= LOGO START =================
+
                         const _ShopLogo(),
+
+                        // ================= LOGO END =================
+
                         const SizedBox(height: 25),
+
+                        // ================= TITLE START =================
+
                         const Text(
                           'Create Account',
                           style: TextStyle(
                             color: AppColors.dark,
-                            fontSize: 22,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 7),
+                        const Text(
+                          'Sign up to start shopping',
+                          style: TextStyle(
+                            color: AppColors.grey,
+                            fontSize: 15,
+                          ),
+                        ),
+
+                        // ================= TITLE END =================
+
                         const SizedBox(height: 25),
+
+                        // ================= NAME START =================
+
                         TextFormField(
                           controller: nameController,
-                          decoration: const InputDecoration(
+                          textInputAction:
+                              TextInputAction.next,
+                          textCapitalization:
+                              TextCapitalization.words,
+                          decoration:
+                              const InputDecoration(
                             hintText: 'Full Name',
-                            prefixIcon: Icon(Icons.person_outline),
+                            prefixIcon: Icon(
+                              Icons.person_outline,
+                            ),
                           ),
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Enter your name';
+                            final name =
+                                value?.trim() ?? '';
+
+                            if (name.isEmpty) {
+                              return 'Please enter your name';
                             }
+
+                            if (name.length < 3) {
+                              return 'Name must contain at least 3 characters';
+                            }
+
                             return null;
                           },
                         ),
+
+                        // ================= NAME END =================
+
                         const SizedBox(height: 14),
+
+                        // ================= EMAIL START =================
+
                         TextFormField(
                           controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
+                          keyboardType:
+                              TextInputType.emailAddress,
+                          textInputAction:
+                              TextInputAction.next,
+                          decoration:
+                              const InputDecoration(
                             hintText: 'Email Address',
-                            prefixIcon: Icon(Icons.email_outlined),
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                            ),
                           ),
                           validator: (value) {
-                            if (value == null || !value.contains('@')) {
-                              return 'Enter a valid email';
+                            final email =
+                                value?.trim() ?? '';
+
+                            if (email.isEmpty) {
+                              return 'Please enter your email';
                             }
+
+                            if (!email.contains('@') ||
+                                !email.contains('.')) {
+                              return 'Please enter a valid email';
+                            }
+
                             return null;
                           },
                         ),
+
+                        // ================= EMAIL END =================
+
                         const SizedBox(height: 14),
+
+                        // ================= PASSWORD START =================
+
                         TextFormField(
                           controller: passwordController,
-                          obscureText: auth.hidePassword,
+                          obscureText: hidePassword,
+                          textInputAction:
+                              TextInputAction.next,
                           decoration: InputDecoration(
                             hintText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline),
+                            prefixIcon: const Icon(
+                              Icons.lock_outline,
+                            ),
                             suffixIcon: IconButton(
-                              onPressed: auth.togglePassword,
+                              onPressed: () {
+                                setState(() {
+                                  hidePassword =
+                                      !hidePassword;
+                                });
+                              },
                               icon: Icon(
-                                auth.hidePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
+                                hidePassword
+                                    ? Icons
+                                          .visibility_outlined
+                                    : Icons
+                                          .visibility_off_outlined,
                               ),
                             ),
                           ),
                           validator: (value) {
-                            if (value == null || value.length < 6) {
+                            final password =
+                                value ?? '';
+
+                            if (password.isEmpty) {
+                              return 'Please enter a password';
+                            }
+
+                            if (password.length < 6) {
                               return 'Minimum 6 characters required';
                             }
+
                             return null;
                           },
                         ),
+
+                        // ================= PASSWORD END =================
+
                         const SizedBox(height: 14),
+
+                        // ================= CONFIRM PASSWORD START =================
+
                         TextFormField(
-                          controller: confirmPasswordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
+                          controller:
+                              confirmPasswordController,
+                          obscureText:
+                              hideConfirmPassword,
+                          textInputAction:
+                              TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            if (!auth.isLoading) {
+                              signUp();
+                            }
+                          },
+                          decoration: InputDecoration(
                             hintText: 'Confirm Password',
-                            prefixIcon: Icon(Icons.lock_outline),
+                            prefixIcon: const Icon(
+                              Icons.lock_outline,
+                            ),
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  hideConfirmPassword =
+                                      !hideConfirmPassword;
+                                });
+                              },
+                              icon: Icon(
+                                hideConfirmPassword
+                                    ? Icons
+                                          .visibility_outlined
+                                    : Icons
+                                          .visibility_off_outlined,
+                              ),
+                            ),
                           ),
                           validator: (value) {
-                            if (value != passwordController.text) {
+                            if (value == null ||
+                                value.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+
+                            if (value !=
+                                passwordController.text) {
                               return 'Passwords do not match';
                             }
+
                             return null;
                           },
                         ),
+
+                        // ================= CONFIRM PASSWORD END =================
+
                         const SizedBox(height: 24),
+
+                        // ================= SIGNUP BUTTON START =================
+
                         ElevatedButton(
-                          onPressed: auth.isLoading ? null : signUp,
+                          onPressed: auth.isLoading
+                              ? null
+                              : signUp,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(
+                              double.infinity,
+                              52,
+                            ),
+                            backgroundColor:
+                                AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(10),
+                            ),
+                          ),
                           child: auth.isLoading
                               ? const SizedBox(
                                   width: 22,
                                   height: 22,
-                                  child: CircularProgressIndicator(
+                                  child:
+                                      CircularProgressIndicator(
                                     color: Colors.white,
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Sign Up'),
+                              : const Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight:
+                                        FontWeight.bold,
+                                  ),
+                                ),
                         ),
-                        const SizedBox(height: 25),
+
+                        // ================= SIGNUP BUTTON END =================
+
+                        const SizedBox(height: 22),
+
+                        // ================= LOGIN START =================
+
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
                           children: [
-                            const Text('Already have an account?'),
+                            const Text(
+                              'Already have an account?',
+                              style: TextStyle(
+                                color: AppColors.grey,
+                              ),
+                            ),
                             TextButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : () {
+                                      Navigator.pop(context);
+                                    },
                               child: const Text('Login'),
                             ),
                           ],
                         ),
+
+                        // ================= LOGIN END =================
                       ],
                     ),
                   ),
@@ -189,11 +398,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             ),
           ),
+
+          // ================= BODY END =================
         ],
       ),
     );
   }
 }
+
+// ================= SHOP LOGO START =================
 
 class _ShopLogo extends StatelessWidget {
   const _ShopLogo();
@@ -220,7 +433,9 @@ class _ShopLogo extends StatelessWidget {
               TextSpan(text: 'Shop'),
               TextSpan(
                 text: 'Easy',
-                style: TextStyle(color: AppColors.primary),
+                style: TextStyle(
+                  color: AppColors.primary,
+                ),
               ),
             ],
           ),
@@ -229,3 +444,5 @@ class _ShopLogo extends StatelessWidget {
     );
   }
 }
+
+// ================= SHOP LOGO END =================
