@@ -7,31 +7,33 @@ import '../auth/login_screen.dart';
 import '../orders/orders_screen.dart';
 import 'addresses_screen.dart';
 import 'edit_profile_screen.dart';
+import 'help_support_screen.dart';
+import 'payment_methods_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  //  OPEN PAGE START 
+
   void openPage(BuildContext context, Widget page) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => page),
-    );
-  }
-
-  void showMessage(BuildContext context, String title) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$title coming soon'),
+      MaterialPageRoute(
+        builder: (_) => page,
       ),
     );
   }
+
+  //  OPEN PAGE END 
+
+  //  LOGOUT START 
 
   Future<void> logout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Logout'),
+          title: const Text('Confirm Logout'),
           content: const Text(
             'Are you sure you want to logout?',
           ),
@@ -40,16 +42,13 @@ class ProfileScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text('Cancel'),
+              child: const Text('No'),
             ),
-            TextButton(
+            FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text(
-                'Logout',
-                style: TextStyle(color: AppColors.red),
-              ),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -71,28 +70,40 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  //  LOGOUT END 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      //  APP BAR START 
+
       appBar: AppBar(
         title: const Text('My Profile'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              showMessage(context, 'Settings');
-            },
-            icon: const Icon(Icons.settings_outlined),
-          ),
-        ],
+        centerTitle: true,
       ),
+
+      //  APP BAR END 
+
+      //  BODY START 
+
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 650),
+          constraints: const BoxConstraints(
+            maxWidth: 650,
+          ),
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              //  PROFILE HEADER START 
+
               const _ProfileHeader(),
+
+              //  PROFILE HEADER END 
+
               const SizedBox(height: 25),
+
+              //  EDIT PROFILE START 
+
               _ProfileOption(
                 icon: Icons.edit_outlined,
                 title: 'Edit Profile',
@@ -103,6 +114,11 @@ class ProfileScreen extends StatelessWidget {
                   );
                 },
               ),
+
+              //  EDIT PROFILE END 
+
+              //  MY ORDERS START 
+
               _ProfileOption(
                 icon: Icons.shopping_bag_outlined,
                 title: 'My Orders',
@@ -113,6 +129,11 @@ class ProfileScreen extends StatelessWidget {
                   );
                 },
               ),
+
+              //  MY ORDERS END 
+
+              //  ADDRESSES START 
+
               _ProfileOption(
                 icon: Icons.location_on_outlined,
                 title: 'Addresses',
@@ -123,28 +144,43 @@ class ProfileScreen extends StatelessWidget {
                   );
                 },
               ),
+
+              //  ADDRESSES END 
+
+              //  PAYMENT METHODS START 
+
               _ProfileOption(
                 icon: Icons.credit_card_outlined,
                 title: 'Payment Methods',
                 onTap: () {
-                  showMessage(context, 'Payment Methods');
+                  openPage(
+                    context,
+                    const PaymentMethodsScreen(),
+                  );
                 },
               ),
+
+              //  PAYMENT METHODS END 
+
+              //  HELP SUPPORT START 
+
               _ProfileOption(
                 icon: Icons.help_outline,
                 title: 'Help & Support',
                 onTap: () {
-                  showMessage(context, 'Help & Support');
+                  openPage(
+                    context,
+                    const HelpSupportScreen(),
+                  );
                 },
               ),
-              _ProfileOption(
-                icon: Icons.info_outline,
-                title: 'About App',
-                onTap: () {
-                  showMessage(context, 'About App');
-                },
-              ),
+
+              //  HELP SUPPORT END 
+
               const SizedBox(height: 30),
+
+              //  LOGOUT BUTTON START 
+
               OutlinedButton.icon(
                 onPressed: () {
                   logout(context);
@@ -153,6 +189,8 @@ class ProfileScreen extends StatelessWidget {
                 label: const Text('Logout'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.red,
+                  backgroundColor:
+                      const Color(0xFFFFF5F5),
                   minimumSize: const Size(
                     double.infinity,
                     50,
@@ -160,19 +198,25 @@ class ProfileScreen extends StatelessWidget {
                   side: const BorderSide(
                     color: Color(0xFFFFCDD2),
                   ),
-                  backgroundColor: const Color(0xFFFFF5F5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius:
+                        BorderRadius.circular(10),
                   ),
                 ),
               ),
+
+              //  LOGOUT BUTTON END 
             ],
           ),
         ),
       ),
+
+      //  BODY END 
     );
   }
 }
+
+//  PROFILE HEADER START 
 
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader();
@@ -185,27 +229,48 @@ class _ProfileHeader extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<
+        DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .snapshots(),
       builder: (context, snapshot) {
+        //  LOADING START 
+
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        //  LOADING END 
+
         final data = snapshot.data?.data();
 
-        final savedName = data?['name'] as String?;
-        final savedEmail = data?['email'] as String?;
+        final savedName = data?['name'];
+        final savedEmail = data?['email'];
 
-        final name = savedName?.trim().isNotEmpty == true
-            ? savedName!
-            : user.displayName ?? 'User';
+        final name =
+            savedName is String &&
+                    savedName.trim().isNotEmpty
+                ? savedName.trim()
+                : user.displayName?.trim().isNotEmpty ==
+                        true
+                    ? user.displayName!.trim()
+                    : 'User';
 
-        final email = savedEmail?.trim().isNotEmpty == true
-            ? savedEmail!
-            : user.email ?? '';
+        final email =
+            savedEmail is String &&
+                    savedEmail.trim().isNotEmpty
+                ? savedEmail.trim()
+                : user.email ?? '';
 
         return Row(
           children: [
+            //  PROFILE ICON START 
+
             const CircleAvatar(
               radius: 38,
               backgroundColor: Color(0xFFE5F7F0),
@@ -215,13 +280,22 @@ class _ProfileHeader extends StatelessWidget {
                 size: 45,
               ),
             ),
+
+            //  PROFILE ICON END 
+
             const SizedBox(width: 16),
+
+            //  USER INFO START 
+
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   Text(
                     name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.dark,
                       fontSize: 21,
@@ -231,6 +305,8 @@ class _ProfileHeader extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.grey,
                     ),
@@ -238,12 +314,18 @@ class _ProfileHeader extends StatelessWidget {
                 ],
               ),
             ),
+
+            //  USER INFO END 
           ],
         );
       },
     );
   }
 }
+
+//  PROFILE HEADER END 
+
+//  PROFILE OPTION START 
 
 class _ProfileOption extends StatelessWidget {
   final IconData icon;
@@ -284,3 +366,5 @@ class _ProfileOption extends StatelessWidget {
     );
   }
 }
+
+//  PROFILE OPTION END 
