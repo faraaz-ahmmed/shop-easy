@@ -23,9 +23,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool hidePassword = true;
 
-  // ================= LOGIN FUNCTION START =================
+  //  LOGIN FUNCTION START 
 
   Future<void> login() async {
+    FocusScope.of(context).unfocus();
+
     if (!formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthViewModel>();
@@ -45,19 +47,45 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         (route) => false,
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            auth.errorMessage ?? 'Login failed.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      return;
     }
+
+    // Input fields clear
+    emailController.clear();
+    passwordController.clear();
+
+    // Validation error borders remove
+    formKey.currentState?.reset();
+
+    // Red message show
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          auth.errorMessage ??
+              'Login incorrect. Please sign up first.',
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    // Wait before opening Signup Screen
+    await Future.delayed(
+      const Duration(seconds: 2),
+    );
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SignUpScreen(),
+      ),
+    );
   }
 
-  // ================= LOGIN FUNCTION END =================
+  //  LOGIN FUNCTION END 
 
   @override
   void dispose() {
@@ -71,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.watch<AuthViewModel>();
 
     return Scaffold(
-      // ================= BACKGROUND START =================
+      //  BACKGROUND START 
 
       body: Stack(
         children: [
@@ -85,9 +113,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // ================= BACKGROUND END =================
+          //  BACKGROUND END 
 
-          // ================= BODY START =================
+          //  BODY START 
 
           SafeArea(
             child: Center(
@@ -106,15 +134,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const SizedBox(height: 10),
 
-                        // ================= LOGO START =================
+                        //  LOGO START 
 
                         const _ShopLogo(),
 
-                        // ================= LOGO END =================
+                        //  LOGO END 
 
                         const SizedBox(height: 25),
 
-                        // ================= TITLE START =================
+                        //  TITLE START 
 
                         const Text(
                           'Welcome Back',
@@ -133,11 +161,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        // ================= TITLE END =================
+                        //  TITLE END 
 
                         const SizedBox(height: 28),
 
-                        // ================= EMAIL START =================
+                        //  EMAIL START 
 
                         TextFormField(
                           controller: emailController,
@@ -169,11 +197,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
 
-                        // ================= EMAIL END =================
+                        //  EMAIL END 
 
                         const SizedBox(height: 14),
 
-                        // ================= PASSWORD START =================
+                        //  PASSWORD START 
 
                         TextFormField(
                           controller: passwordController,
@@ -222,11 +250,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
 
-                        // ================= PASSWORD END =================
+                        //  PASSWORD END 
 
                         const SizedBox(height: 24),
 
-                        // ================= LOGIN BUTTON START =================
+                        //  LOGIN BUTTON START 
 
                         ElevatedButton(
                           onPressed:
@@ -239,6 +267,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             backgroundColor:
                                 AppColors.primary,
                             foregroundColor: Colors.white,
+                            disabledBackgroundColor:
+                                AppColors.primary
+                                    .withValues(alpha: 0.6),
                             shape: RoundedRectangleBorder(
                               borderRadius:
                                   BorderRadius.circular(10),
@@ -264,11 +295,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                         ),
 
-                        // ================= LOGIN BUTTON END =================
+                        //  LOGIN BUTTON END 
 
                         const SizedBox(height: 22),
 
-                        // ================= SIGNUP START =================
+                        //  SIGNUP LINK START 
 
                         Row(
                           mainAxisAlignment:
@@ -297,7 +328,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
 
-                        // ================= SIGNUP END =================
+                        //  SIGNUP LINK END 
                       ],
                     ),
                   ),
@@ -306,14 +337,14 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // ================= BODY END =================
+          //  BODY END 
         ],
       ),
     );
   }
 }
 
-// ================= SHOP LOGO START =================
+//  SHOP LOGO START 
 
 class _ShopLogo extends StatelessWidget {
   const _ShopLogo();
@@ -352,4 +383,4 @@ class _ShopLogo extends StatelessWidget {
   }
 }
 
-// ================= SHOP LOGO END =================
+//  SHOP LOGO END 

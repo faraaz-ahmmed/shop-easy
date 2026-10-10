@@ -25,7 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool hidePassword = true;
   bool hideConfirmPassword = true;
 
-  // ================= SIGNUP START =================
+  //  SIGNUP START 
 
   Future<void> signUp() async {
     if (!formKey.currentState!.validate()) return;
@@ -69,7 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // ================= SIGNUP END =================
+  //  SIGNUP END 
 
   @override
   void dispose() {
@@ -85,7 +85,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final auth = context.watch<AuthViewModel>();
 
     return Scaffold(
-      // ================= BACKGROUND START =================
+      //  BACKGROUND START 
 
       body: Stack(
         children: [
@@ -99,9 +99,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
 
-          // ================= BACKGROUND END =================
+          //  BACKGROUND END 
 
-          // ================= BODY START =================
+          //  BODY START 
 
           SafeArea(
             child: SingleChildScrollView(
@@ -120,15 +120,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       children: [
                         const SizedBox(height: 10),
 
-                        // ================= LOGO START =================
+                        //  LOGO START 
 
                         const _ShopLogo(),
 
-                        // ================= LOGO END =================
+                        //  LOGO END 
 
                         const SizedBox(height: 25),
 
-                        // ================= TITLE START =================
+                        //  TITLE START 
 
                         const Text(
                           'Create Account',
@@ -147,11 +147,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
 
-                        // ================= TITLE END =================
+                        //  TITLE END 
 
                         const SizedBox(height: 25),
 
-                        // ================= NAME START =================
+                        //  NAME START 
 
                         TextFormField(
                           controller: nameController,
@@ -182,11 +182,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           },
                         ),
 
-                        // ================= NAME END =================
+                        //  NAME END 
 
                         const SizedBox(height: 14),
 
-                        // ================= EMAIL START =================
+                        //  EMAIL START 
 
                         TextFormField(
                           controller: emailController,
@@ -218,11 +218,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           },
                         ),
 
-                        // ================= EMAIL END =================
+                        //  EMAIL END 
 
                         const SizedBox(height: 14),
 
-                        // ================= PASSWORD START =================
+                        //  PASSWORD START 
 
                         TextFormField(
                           controller: passwordController,
@@ -266,11 +266,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           },
                         ),
 
-                        // ================= PASSWORD END =================
+                        //  PASSWORD END 
 
                         const SizedBox(height: 14),
 
-                        // ================= CONFIRM PASSWORD START =================
+                        //  CONFIRM PASSWORD START 
 
                         TextFormField(
                           controller:
@@ -320,11 +320,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           },
                         ),
 
-                        // ================= CONFIRM PASSWORD END =================
+                        //  CONFIRM PASSWORD END 
 
                         const SizedBox(height: 24),
 
-                        // ================= SIGNUP BUTTON START =================
+                        //  SIGNUP BUTTON START 
 
                         ElevatedButton(
                           onPressed: auth.isLoading
@@ -363,11 +363,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                         ),
 
-                        // ================= SIGNUP BUTTON END =================
+                        //  SIGNUP BUTTON END 
 
                         const SizedBox(height: 22),
 
-                        // ================= LOGIN START =================
+                        //  LOGIN START 
 
                         Row(
                           mainAxisAlignment:
@@ -390,7 +390,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ],
                         ),
 
-                        // ================= LOGIN END =================
+                        //  LOGIN END 
                       ],
                     ),
                   ),
@@ -399,14 +399,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
 
-          // ================= BODY END =================
+          //  BODY END 
         ],
       ),
     );
   }
 }
 
-// ================= SHOP LOGO START =================
+//  SHOP LOGO START 
 
 class _ShopLogo extends StatelessWidget {
   const _ShopLogo();
@@ -445,4 +445,4 @@ class _ShopLogo extends StatelessWidget {
   }
 }
 
-// ================= SHOP LOGO END =================
+//  SHOP LOGO END 
